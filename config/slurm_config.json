@@ -1,0 +1,10 @@
+{
+	"__default__":
+	{
+		"time":"8:00:00",
+		"name":"{rule}",
+		"partition":"quake",
+                "mem":"100G",
+                "ntasks":"1",
+	        "cpus-per-task":"20"
+	}}

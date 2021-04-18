@@ -1,0 +1,3 @@
+170527 - removed IGLJ-C/OR18*01 and *02
+171215 - removed all membrane bound fasta entries (can mess up iso call e.g.
+for IgGs)

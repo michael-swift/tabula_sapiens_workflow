@@ -1,0 +1,5 @@
+dir: /local10G/dcroote/singlecell/other_datasets/fabiotcells
+seedfile: /local10G/dcroote/singlecell/singleBcell_RNA_seq/assembly/run/fabiotcells.txt
+assembler: basic
+species: human
+receptor: TCR

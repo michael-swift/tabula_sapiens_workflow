@@ -1,0 +1,5 @@
+dir: /local10G/dcroote/singlecell/fastq/
+seedfile: /local10G/dcroote/singlecell/singleBcell_RNA_seq/assembly/run/all_seeds_no_blanks.txt
+assembler: bridger
+species: human
+receptor: BCR

@@ -1,0 +1,6 @@
+dir: /local10G/dcroote/singlecell/singleBcell_RNA_seq/assembly/
+seedfile: /local10G/dcroote/singlecell/singleBcell_RNA_seq/assembly/run/test_gene_insertion.txt
+assembler: 
+species: human
+receptor: BCR
+sanger: True

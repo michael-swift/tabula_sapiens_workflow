@@ -1,0 +1,15 @@
+"igh" and "igl" designations are hardcoded into BASIC.py thus need to conform TCR filenames to this format
+
+Human TCR-
+    alpha chain- "igh"
+    beta chain-  "igl" 
+
+Mouse TCR (maca)-
+    alpha (and gamma) chain- "igl"
+    beta (and delta) chain-  "igh" 
+
+    Using beta as the heavy as BASIC attempts to assemble the heavy first, which will result in a productive chain for pre- T cells that have a beta chain paired with a pre-alpha
+
+
+Building the indices:
+    bowtie2-build mouse_tcr_180305_iglv mouse_tcr_180305_iglv

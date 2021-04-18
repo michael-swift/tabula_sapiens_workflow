@@ -1,0 +1,5 @@
+dir: /local10G/dcroote/singlecell/other_datasets/maca
+seedfile: /local10G/dcroote/singlecell/singleBcell_RNA_seq/assembly/run/maca_seeds.txt
+assembler: basic
+species: mouse
+receptor: TCR
