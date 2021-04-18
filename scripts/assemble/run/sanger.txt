@@ -1,5 +1,0 @@
-sanger	171204_switching
-sanger	171219_augmenta_assembled
-sanger	180220_sequence_confirmations
-sanger	180504_eg4
-sanger	180605_basic

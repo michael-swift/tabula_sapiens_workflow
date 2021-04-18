@@ -1,6 +1,0 @@
-dir: /local10G/dcroote/singlecell/
-seedfile: /local10G/dcroote/singlecell/singleBcell_RNA_seq/assembly/run/sanger.txt
-assembler: 
-species: human
-receptor: BCR
-sanger: True

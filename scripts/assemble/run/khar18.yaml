@@ -1,6 +1,0 @@
-dir: /local10G/dcroote/singlecell/other_datasets/khar18
-seedfile: /local10G/dcroote/singlecell/singleBcell_RNA_seq/assembly/run/khar18.txt
-assembler: basic
-species: human
-receptor: BCR
-SRA: 1

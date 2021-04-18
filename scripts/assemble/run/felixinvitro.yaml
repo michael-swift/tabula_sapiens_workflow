@@ -1,5 +1,0 @@
-dir: /local10G/dcroote/singlecell/other_datasets/felixinvitro
-seedfile: /local10G/dcroote/singlecell/other_datasets/felixinvitro/samples.txt
-assembler: basic
-species: human
-receptor: BCR

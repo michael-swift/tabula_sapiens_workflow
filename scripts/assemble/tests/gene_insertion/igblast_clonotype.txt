@@ -1,5 +1,0 @@
-
-Total queries = 3
-Total identifiable CDR3 = 1
-Total unique clonotypes = 1
-
