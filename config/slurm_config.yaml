@@ -8,10 +8,10 @@ __default__:
     output: 'snakemake_logs/slurm_logs/{rule}_%j.out'
     error: 'snakemake_logs/slurm_logs/{rule}%j.err'
 cell_ranger:
-    time: '24:00:00'
+    time: '36:00:00'
     name: '{rule}'
     partition: quake
-    mem: '100000'
+    mem: '220000'
     ntasks: '1'
     cpus-per-task: '20'
     output: 'snakemake_logs/slurm_logs/{rule}_%j.out'

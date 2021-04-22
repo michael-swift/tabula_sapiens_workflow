@@ -14,6 +14,7 @@ NJOBS=200
 WAIT=120
 
 source $HOME/miniconda3/etc/profile.d/conda.sh
+
 conda activate snakemake
 
 mkdir -p snakemake_logs/slurm_logs/
@@ -21,6 +22,7 @@ mkdir -p snakemake_logs/slurm_logs/
 #log file for process that calls snakemake
 SBATCH_LOGFILE=snakemake_logs/cluster.$DATETIME.log
 SBATCH_LOGFILE_ERR=snakemake_logs/cluster.$DATETIME.log.err
+
 #Snakemake log file
 LOGFILE=snakemake_logs/snakamaka.$DATETIME.log
 LOGFILE_ERR=snakemake_logs/snakamaka.$DATETIME.log.err

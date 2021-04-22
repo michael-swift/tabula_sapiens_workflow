@@ -4,7 +4,7 @@ import pandas as pd
 import glob
 from collections import defaultdict
 
-test = False
+test = True
 
 shell.prefix("set +euo pipefail;")
 
@@ -13,16 +13,18 @@ configfile: "config/config.yaml"
 
 
 outdir = config["out_dir"]
+# should be loaded as config file
 donors = [
-    "pilot10",
-    "pilot13",
-    "pilot4",
-    "pilot8",
-    "pilot9",
-    "pilot6",
-    "pilot3",
-    "pilot12",
+    "pilot_10",
+    "pilot_13",
+    "pilot_4",
+    "pilot_8",
+    "pilot_9",
+    "pilot_6",
+    "pilot_3",
+    "pilot_12",
 ]
+
 
 os.makedirs(outdir, exist_ok=True)
 
@@ -30,12 +32,13 @@ os.makedirs(outdir, exist_ok=True)
 FASTQ_DIR = config["raw_data"]
 fq_paths = glob.glob(FASTQ_DIR + "*5prime*")
 
-samples = []
+libs = []
+
 for path in fq_paths:
     fq = path.split("/")[-1]
-    sample = fq.rsplit("_", 4)[0]
-    samples.append(sample)
-samples = list(set(samples))
+    lib = fq.rsplit("_", 4)[0]
+    libs.append(lib)
+    libs = list(set(libs))
 
 
 def get_changeos(wildcards):
@@ -49,17 +52,19 @@ def get_changeos(wildcards):
 
 # Testing
 if test == True:
-    samples = samples[:2]
+    libs = libs[:2]
 
+include: "rules/get_containers.smk"
 
 rule all:
     input:
-        expand(
-            "{outdir}/10X/{sample}/outs/metrics_summary.csv",
-            sample=samples,
+        "{}/10X/changeo/combined_changeo.tab".format(outdir), expand(
+            "{outdir}/10X/{lib}/outs/metrics_summary.csv",
+            lib=libs,
             outdir=outdir,
-            ),
+        ),
         "{}/SS2/changeo/combined_db-pass.tsv".format(outdir),
+
     params:
         name="all",
         partition="normal",
@@ -67,15 +72,16 @@ rule all:
 
 
 #### CellRanger VDJ #####
+
 rule cellranger_vdj:
     input:
         config["raw_data"],
     output:
-        summary="{outdir}/10X/{sample}/outs/metrics_summary.csv",
-        fasta="{outdir}/10X/{sample}/outs/filtered_contig.fasta",
-        anno="{outdir}/10X/{sample}/outs/filtered_contig_annotations.csv",
+        summary="{outdir}/10X/{lib}/outs/metrics_summary.csv",
+        fasta="{outdir}/10X/{lib}/outs/filtered_contig.fasta",
+        anno="{outdir}/10X/{lib}/outs/filtered_contig_annotations.csv",
     log:
-        "{outdir}/logs/cellranger_{sample}.log",
+        "{outdir}/logs/cellranger_{lib}.log",
     params:
         name="vdj_cellranger",
         partition="quake",
@@ -83,8 +89,43 @@ rule cellranger_vdj:
         cell_ranger=config["cell_ranger"],
         ref=config["cell_ranger_ref"],
     shell:
-        "cd {params.outdir}/10X && rm -rf {wildcards.sample} && {params.cell_ranger} vdj --id={wildcards.sample} --fastqs={input} --reference={params.ref} --sample={wildcards.sample}"
+        "cd {params.outdir}/10X && rm -rf {wildcards.lib} && {params.cell_ranger} vdj --id={wildcards.lib} --fastqs={input} --reference={params.ref} --sample={wildcards.lib}"
 
+rule changeo_10x:
+    input:
+        fasta="{outdir}/10X/{lib}/outs/filtered_contig.fasta",
+        anno="{outdir}/10X/{lib}/outs/filtered_contig_annotations.csv",
+        sif=rules.get_immcantation_image.output
+    output:
+        db="{outdir}/10X/{lib}/changeo/dboutput.tab",
+        directory=directory("{outdir}/10X/{lib}/changeo/"),
+    log:
+        "{outdir}/log_{lib}/log.log",    
+    shell:
+        """
+        DATA_DIR={wildcards.outdir}/10X/{wildcards.lib}
+        READS=/data/outs/filtered_contig.fasta
+        ANNOTATIONS=/data/outs/filtered_contig_annotations.csv
+        SAMPLE_NAME={wildcards.lib}
+        OUT_DIR=$DATA_DIR/changeo
+        DIST=0.15
+        NPROC=2 
+        singularity exec -B $DATA_DIR:/data {input.sif} \
+        changeo-10x -s $READS -a $ANNOTATIONS -x $DIST -n $SAMPLE_NAME \
+        -o $OUT_DIR -p $NPROC"""
+
+rule combine_changeo_10X:
+    input:
+        expand("{outdir}/10X/{lib}/changeo/dboutput.tab", lib=libs,
+            outdir=outdir)
+    output:
+        "{outdir}/10X/changeo/combined_changeo.tab",
+    log:
+        "{outdir}/log/changeocombine.log",
+    shell:
+        "cat {input} {output}"
+
+#### bracer
 
 rule get_bracer_contigs:
     input:
@@ -118,16 +159,13 @@ rule combine_bracer_contigs:
     shell:
         "cat {input} > {output}"
 
-#rule combine_tracer_contigs:
-    
+
 rule changeo_igblast_bracer:
     input:
         "{outdir}/SS2/combined_bracer_contigs.fasta",
         sif="{}/resources/repertoire/{}.sif".format(workflow.basedir, "immcantation"),
     output:
         "{outdir}/SS2/changeo/combined_db-pass.tsv",
-    conda:
-        os.path.join(workflow.basedir, "envs/bcr.yaml")
     log:
         "{outdir}/logs/combined_igblast.log",
     params:
@@ -136,6 +174,7 @@ rule changeo_igblast_bracer:
     shell:
         "singularity exec -B {wildcards.outdir}:/data {input.sif} changeo-igblast -s /data/SS2/combined_bracer_contigs.fasta -n combined -o /data/SS2/changeo -p 2"
 
+#### tracer
 
 rule changeo_igblast_tracer:
     input:
@@ -143,37 +182,12 @@ rule changeo_igblast_tracer:
         sif="{}/resources/repertoire/{}.sif".format(workflow.basedir, "immcantation"),
     output:
         "{outdir}/SS2/changeo/combined_db-pass.tsv",
-    conda:
-        os.path.join(workflow.basedir, "envs/bcr.yaml")
     log:
         "{outdir}/logs/combined_igblast.log",
     params:
         name="extract_seqs",
         partition="quake,owners",
     shell:
-        "singularity exec -B {wildcards.outdir}:/data {input.sif} changeo-clone -d /data//data/SS2/combined_bracer_contigs.fasta -n combined -o /data/SS2/changeo -p 2"
-
-rule tenX_to_changeo:
-    input:
-        fasta="{outdir}/10X/{sample}/outs/filtered_contig.fasta",
-        anno="{outdir}/10X/{sample}/outs/filtered_contig_annotations.csv",
-    output:
-        "{outdir}/10X/changeo/{sample}/10X_VDJs.fastq",
-    log:
-        "{outdir}/log_{sample}/log.log",
-    shell:
-        "cd {params.outdir} && rm -rf {wildcards.sample} && {params.cell_ranger} vdj --id={wildcards.sample} --fastqs={input} --reference={params.ref} --sample={wildcards.sample}"
+        "singularity exec -B {wildcards.outdir}:/data {input.sif} changeo-clone -d /data/SS2/combined_bracer_contigs.fasta -n combined -o /data/SS2/changeo -p 2"
 
 
-rule combine_tenX_TCRs:
-    input:
-        anno="{outdir}/10X/{sample}/outs/filtered_contig_annotations.csv",
-    output:
-        "{outdir}/10X/changeo/{sample}/.fastq",
-    log:
-        "{outdir}/log_{sample}/log.log",
-    shell:
-        "cd {params.outdir} && rm -rf {wildcards.sample} && {params.cell_ranger} vdj --id={wildcards.sample} --fastqs={input} --reference={params.ref} --sample={wildcards.sample}"
-
-
-include: "rules/get_containers.smk"
