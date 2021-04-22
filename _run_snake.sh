@@ -7,7 +7,7 @@ RESTART=0
 SNAKEFILE=Snakefile.smk
 EMAIL=mswift2@stanford.edu
 
-CLUSTER_CONFIG=config/slurm_config.yaml
+CLUSTER_CONFIG=config/slurm_config.json
 
 #Snakemake config
 NJOBS=200
@@ -91,9 +91,7 @@ elif [ $1 = "snakemake" ]
                   --mem={cluster.mem} \
                   --ntasks={cluster.ntasks} \
                   --cpus-per-task={cluster.cpus-per-task} \
-                  --partition={cluster.partition} \
-                  --output={cluster.output} \
-                  --error={cluster.error}" \
+                  --partition={cluster.partition}"\
         --keep-target-files \
         --rerun-incomplete \
         -j $NJOBS \

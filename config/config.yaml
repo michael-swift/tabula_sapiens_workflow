@@ -4,7 +4,7 @@
 # path to sheet describing each cell
 samplesheet: samplesheets/samplesheet.tab
 # output directory for processed data
-out_dir: "/oak/stanford/groups/quake/mswift/10X_VDJ_Tabula"
+out_dir: "/oak/stanford/groups/quake/mswift/tabula_sapiens"
 raw_data: "/oak/stanford/groups/quake/shared/NovaSeq/20200820_TSP3to7_10X/Tabula_Sapiens/"
 # the assembly pipeline uses the immcantation framework for IgBLAST
 # gene segment calling and results parsing
@@ -20,8 +20,6 @@ species: human
 
 # partition (for cluster computing)
 partition: "quake,owners"
-
-
 # Software
 #---------------------------
 cell_ranger: "/home/groups/quake/isakova/cellranger-3.1.0/cellranger"
@@ -56,4 +54,4 @@ gtf_url:
 
 gtf_name:
   human: Homo_sapiens.GRCh38.93
-  mouse: Mus_musculus.GRCm38.93 
+  mouse: Mus_musculus.GRCm38.93
