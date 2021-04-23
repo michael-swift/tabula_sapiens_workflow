@@ -11,10 +11,6 @@ raw_data: "/oak/stanford/groups/quake/shared/NovaSeq/20200820_TSP3to7_10X/Tabula
 # options: 'docker' or 'singularity'
 container_type: singularity
 
-# Singularity only: if commands are required prior
-# to singularity execution, uncomment and edit the line below
-#singularity_pre_cmd: "module load system && module load singularity && "
-
 # human or mouse
 species: human
 
@@ -55,3 +51,4 @@ gtf_url:
 gtf_name:
   human: Homo_sapiens.GRCh38.93
   mouse: Mus_musculus.GRCm38.93
+IGDBDIR: /oak/stanford/groups/quake/shared/swiftShare/igblast

@@ -1,6 +1,5 @@
 # snakemake rules for pulling the immcantation image depending on
 # whether docker or singularity is being used
-# put this in config
 
 rule get_immcantation_image:
         """ pull the immcantation image using singularity
