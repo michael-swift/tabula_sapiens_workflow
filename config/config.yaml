@@ -4,7 +4,7 @@
 # path to sheet describing each cell
 samplesheet: samplesheets/samplesheet.tab
 # output directory for processed data
-out_dir: "/oak/stanford/groups/quake/mswift/tabula_sapiens"
+base: "/oak/stanford/groups/quake/mswift/tabula_sapiens"
 raw_data: "/oak/stanford/groups/quake/shared/NovaSeq/20200820_TSP3to7_10X/Tabula_Sapiens/"
 # the assembly pipeline uses the immcantation framework for IgBLAST
 # gene segment calling and results parsing
@@ -34,6 +34,7 @@ read_length: 100
 # whether or not to include ERCCs in the genome fasta and gtf 
 include_ERCCs: True
 
+
 # STAR alignment: fasta and gtf files
 # (these should not need to be changed)
 fasta_url:
@@ -51,4 +52,12 @@ gtf_url:
 gtf_name:
   human: Homo_sapiens.GRCh38.93
   mouse: Mus_musculus.GRCm38.93
+
+ighc_db:
+  human: db/IGHC/human_IGHC_IMGT_membrane_only_reformatted.fasta
+  imgt_exons: db/IGHC/IGHC_exons.bed
+  imgt_introns: db/IGHC/IGHC_introns_inner.bed
+  mouse: db/IGHC/mouse_IGHC_IMGT_reformatted.fasta
+path_to_grmlin: /home/users/cvijovic/ig-germline-discovery/grmlin/
 IGDBDIR: /oak/stanford/groups/quake/shared/swiftShare/igblast
+scripts: ./scripts

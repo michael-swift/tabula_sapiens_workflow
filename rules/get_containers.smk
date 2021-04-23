@@ -19,3 +19,15 @@ rule get_immcantation_image:
             "singularity build $img "
             "{params.docker_address}"
             
+rule get_imgt_db:
+        """ pull the imgt db
+
+        """
+        output:directory("{}/db/imgtdb/".format(workflow.basedir)),
+        threads: 1
+        params:
+            name="getimgtdb",
+        resources:
+            mem_mb=10000,
+        shell:
+            "bash {params.scripts}/fetch_imgtdb.sh -o {output}"
