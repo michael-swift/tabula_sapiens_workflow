@@ -10,7 +10,7 @@ __default__:
 cellranger_vdj:
     time: '10:00:00'
     name: '{rule}'
-    partition: quake,owners
+    partition: quake
     mem: '210000'
     ntasks: '1'
     cpus-per-task: '20'

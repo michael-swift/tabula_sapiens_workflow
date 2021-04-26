@@ -69,17 +69,17 @@ rule edit_10X_igblast:
     run:
         df = pd.read_table(input.tsv, sep="\t")
         df["library"] = wildcards.lib
+        df["cell_id"] = wildcards.lib + df['sequence_id']
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
 
 
 ### get_bracer_contigs:
 
-
-rule get_bracer_contigs:
+rule get_SS2_contigs:
     input:
         get_changeos,
     output:
-        fasta="{base}/SS2/{donor}/bracer_contigs.fasta",
+        fasta="{base}/SS2/{donor}/contigs.fasta",
     conda:
         os.path.join(workflow.basedir, "envs/bcr.yaml")
     log:
@@ -92,11 +92,11 @@ rule get_bracer_contigs:
         "python {params.scripts}/get_bracer_contigs.py {input} {output}"
 
 
-rule combine_bracer_contigs:
+rule combine_SS2_contigs:
     input:
-        expand("{base}/SS2/{donor}/bracer_contigs.fasta", base=base, donor=donors),
+        expand("{base}/SS2/{donor}/contigs.fasta", base=base, donor=donors),
     output:
-        "{base}/SS2/combined_bracer_contigs.fasta",
+        "{base}/SS2/combined_contigs.fasta",
     conda:
         os.path.join(workflow.basedir, "envs/bcr.yaml")
     log:
@@ -110,7 +110,7 @@ rule combine_bracer_contigs:
 
 rule igblast_SS2:
     input:
-        rules.combine_bracer_contigs.output,
+        rules.combine_SS2_contigs.output,
     output:
         "{base}/SS2/igblast/igblast.airr.tsv",
     conda:
@@ -137,7 +137,6 @@ rule igblast_SS2:
         -out {output}
         """
 
-
 rule edit_SS2_igblast:
     input:
         tsv="{base}/SS2/igblast/igblast.airr.tsv",
@@ -148,6 +147,7 @@ rule edit_SS2_igblast:
     run:
         df = pd.read_table(input.tsv, sep="\t")
         df["is_cell"] = "T"
+        df["cell_id"] = df['sequence_id'].str.split('|', expand = True)[-1]
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
 
 

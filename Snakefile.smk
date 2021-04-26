@@ -1,4 +1,3 @@
-from pprint import pprint
 import os
 import pandas as pd
 import glob
@@ -42,7 +41,6 @@ def get_10X_fastqs(FASTQ_DIR):
 
 
 libs = get_10X_fastqs(config["raw_data"])
-print(libs)
 # Extract changeos from angelas data
 def get_changeos(wildcards):
     parentdir = wildcards["base"]
