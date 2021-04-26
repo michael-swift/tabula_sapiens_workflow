@@ -190,9 +190,8 @@ if __name__ == '__main__':
     
     if verbose:
         print( "Parsing sequence_id for filtered records...")
-
-    #Parse sequence_id field and drop column
-
+"""
+    #Parse sequence_id field and drop column, seems that each sequence_id has a particular format that I'm not adhereing to
     sequence_id_records=df.sequence_id.str.split("|").map(lambda x: {item.split("=")[0]: item.split("=")[1] 
                                                                 for item in x})
     sequence_id_fields = list(sequence_id_records.iloc[0].keys())
@@ -229,8 +228,8 @@ if __name__ == '__main__':
 
     if verbose:
         print(" Saving filtered records to {}...".format(vdj_pass_out_filename))
-
-    df.to_csv(vdj_pass_out_filename, sep = '\t')
+"""
+df.to_csv(vdj_pass_out_filename, sep = '\t')
 
     
 

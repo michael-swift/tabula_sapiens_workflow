@@ -4,7 +4,7 @@ import os
 # -----------------------------
 # Configuration
 
-species=config['species']
+species = config["species"]
 
 # Cell Ranger
 #### CellRanger VDJ #####
@@ -17,27 +17,29 @@ rule cellranger_vdj:
         "{base}/10X/{lib}/outs/metrics_summary.csv",
         "{base}/10X/{lib}/outs/filtered_contig.fasta",
         "{base}/10X/{lib}/outs/filtered_contig_annotations.csv",
+        "{base}/10X/{lib}/outs/airr_rearrangement.tsv",
     log:
         "{base}/logs/cellranger_{lib}.log",
     params:
         name="vdj_cellranger",
         base=config["base"],
-        cell_ranger=config["cell_ranger"],
+        cell_ranger=config["cell_ranger3"],
         ref=config["cell_ranger_ref"],
     shell:
         "cd {params.base}/10X && rm -rf {wildcards.lib} && {params.cell_ranger} vdj --id={wildcards.lib} --fastqs={input} --reference={params.ref} --sample={wildcards.lib}"
+
 
 rule igblast_10X:
     input:
         "{base}/10X/{lib}/outs/filtered_contig.fasta",
     output:
-        temp("{base}/10X/igblast/{lib}_igblast_airr.tsv")
+        "{base}/10X/igblast/{lib}_igblast.airr.tsv",
     conda:
         os.path.join(workflow.basedir, "envs/pacbio.yaml")
     params:
-        organism=config["species"],
+        organism="human",
         IGDBDIR=config["IGDBDIR"],
-        seqtype=sense_lib_type
+        seqtype="Ig",
     shell:
         """
         ml load system libuv
@@ -56,18 +58,22 @@ rule igblast_10X:
         -out {output}
         """
 
-rule add_lib_sequence_id:
+
+rule edit_10X_igblast:
     input:
-        "{base}/10X/igblast/{lib}_igblast_airr.tsv",
+        tsv="{base}/10X/igblast/{lib}_igblast.airr.tsv",
     output:
-        "{base}/10X/igblast/{lib}_igblast.airr.tsv",
+        tsv="{base}/10X/igblast/{lib}_igblast_edit.airr.tsv",
+    params:
+        organism="human",
     run:
-        df = pd.read_table(input[0], sep="\t", index_col=None)
-        df["sequence_id"] = df["sequence_id"] + '_' + wildcards.lib
-        df.to_csv(output[0], sep="\t", index=False)
+        df = pd.read_table(input.tsv, sep="\t")
+        df["library"] = wildcards.lib
+        df.to_csv(output.tsv, sep="\t", index=False, header=True)
 
 
-#### bracer from Angela ####
+### get_bracer_contigs:
+
 
 rule get_bracer_contigs:
     input:
@@ -101,11 +107,12 @@ rule combine_bracer_contigs:
     shell:
         "cat {input} > {output}"
 
-rule igblast_bracer_SS2:
+
+rule igblast_SS2:
     input:
-        rules.combine_bracer_contigs.output
+        rules.combine_bracer_contigs.output,
     output:
-        "{base}/SS2/igblast/bracer_igblast.airr.tsv",
+        "{base}/SS2/igblast/igblast.airr.tsv",
     conda:
         os.path.join(workflow.basedir, "envs/pacbio.yaml")
     params:
@@ -130,6 +137,20 @@ rule igblast_bracer_SS2:
         -out {output}
         """
 
+
+rule edit_SS2_igblast:
+    input:
+        tsv="{base}/SS2/igblast/igblast.airr.tsv",
+    output:
+        tsv="{base}/SS2/igblast/igblast_cell.airr.tsv",
+    params:
+        organism="human",
+    run:
+        df = pd.read_table(input.tsv, sep="\t")
+        df["is_cell"] = "T"
+        df.to_csv(output.tsv, sep="\t", index=False, header=True)
+
+
 rule igblast_tracer:
     input:
         "{base}/SS2/bracer/",
@@ -144,16 +165,18 @@ rule igblast_tracer:
     shell:
         "singularity exec -B {wildcards.base}:/data {input.sif} changeo-clone -d /data/SS2/combined_bracer_contigs.fasta -n combined -o /data/SS2/changeo -p 2"
 
+
 ## Combined Outputs
+
 
 rule combine_igblast:
     input:
         TenXs=expand(
-            "{base}/10X/igblast/{lib}_igblast.airr.tsv", lib=libs, base=base
+            "{base}/10X/igblast/{lib}_igblast_edit.airr.tsv", lib=libs, base=base
         ),
         SS2="{base}/SS2/igblast/bracer_igblast.airr.tsv",
     output:
-        "{base}/vdj/combined_igblast.airr.tsv",
+        tsv="{base}/vdj/combined_igblast.airr.tsv.gz",
     log:
         "{base}/log/combineigblast.log",
     run:
@@ -162,34 +185,17 @@ rule combine_igblast:
         infiles.append(input.SS2)
         print(infiles)
         for i in infiles:
-            df = pd.read_table(i, sep = "\t")
+            df = pd.read_table(i, sep="\t")
+            df["sample_id"] = i.split("/")[-1].split("_")[0]
             dfs.append(df)
-        
-        combined = pd.concat(dfs)
-        combined.to_csv(output[0], sep="\t", index=False, header=True)
-    
 
-rule filter_vdj:
-    input:
-        "{base}/vdj/combined_igblast.airr.tsv",
-    output:
-        "{base}/vdj/combined_vdj.tsv.gz",
-    conda:
-        "../envs/pacbio.yaml"
-    log:
-        "{base}/logs/filter_vdj.log",
-    params:
-        scripts=config["scripts"],
-    shell:
-        "python {params.scripts}/filter_igblast_output.py "
-        "{input} "
-        "-outdir {wildcards.base}/vdj "
-        "--verbose "
-        ">{log}"
+        combined = pd.concat(dfs)
+        combined.to_csv(output.tsv, sep="\t", index=False, header=True)
+
 
 rule annotate_constant_region:
     input:
-        "{base}/vdj/combined_vdj.tsv.gz",
+        "{base}/vdj/combined_igblast.airr.tsv.gz",
     output:
         "{base}/vdjc/combined_vdjc.tsv.gz",
     conda:
@@ -202,6 +208,9 @@ rule annotate_constant_region:
     shell:
         "python {params.scripts}/blast_constant_region.py "
         "{input} "
+        "--min_j_sequence_legnth 15 "
+        "--allow_missing_cdr3 True "
+        "--allow_ns_in_sequence True "
         "-ighc_db {params.ighc_db} "
         "-outdir {wildcards.base}/vdjc "
         "> {log}"
