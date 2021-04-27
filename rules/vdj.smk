@@ -9,7 +9,6 @@ species = config["species"]
 # Cell Ranger
 #### CellRanger VDJ #####
 
-
 rule cellranger_vdj:
     input:
         config["raw_data"],
@@ -23,7 +22,7 @@ rule cellranger_vdj:
     params:
         name="vdj_cellranger",
         base=config["base"],
-        cell_ranger=config["cell_ranger3"],
+        cell_ranger=config["cell_ranger"],
         ref=config["cell_ranger_ref"],
     shell:
         "cd {params.base}/10X && rm -rf {wildcards.lib} && {params.cell_ranger} vdj --id={wildcards.lib} --fastqs={input} --reference={params.ref} --sample={wildcards.lib}"
@@ -58,7 +57,6 @@ rule igblast_10X:
         -out {output}
         """
 
-
 rule edit_10X_igblast:
     input:
         tsv="{base}/10X/igblast/{lib}_igblast.airr.tsv",
@@ -71,7 +69,6 @@ rule edit_10X_igblast:
         df["library"] = wildcards.lib
         df["cell_id"] = wildcards.lib + df['sequence_id']
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
-
 
 ### get_bracer_contigs:
 
@@ -90,7 +87,6 @@ rule get_SS2_contigs:
         scripts=os.path.join(workflow.basedir, "scripts"),
     shell:
         "python {params.scripts}/get_bracer_contigs.py {input} {output}"
-
 
 rule combine_SS2_contigs:
     input:
@@ -150,7 +146,6 @@ rule edit_SS2_igblast:
         df["cell_id"] = df['sequence_id'].str.split('|', expand = True)[-1]
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
 
-
 rule igblast_tracer:
     input:
         "{base}/SS2/bracer/",
@@ -168,7 +163,6 @@ rule igblast_tracer:
 
 ## Combined Outputs
 
-
 rule combine_igblast:
     input:
         TenXs=expand(
@@ -183,7 +177,6 @@ rule combine_igblast:
         dfs = []
         infiles = input.TenXs
         infiles.append(input.SS2)
-        print(infiles)
         for i in infiles:
             df = pd.read_table(i, sep="\t")
             df["sample_id"] = i.split("/")[-1].split("_")[0]
@@ -192,14 +185,13 @@ rule combine_igblast:
         combined = pd.concat(dfs)
         combined.to_csv(output.tsv, sep="\t", index=False, header=True)
 
-
 rule annotate_constant_region:
     input:
         "{base}/vdj/combined_igblast.airr.tsv.gz",
     output:
         "{base}/vdjc/combined_vdjc.tsv.gz",
     conda:
-        "../envs/pacbio.yaml"
+        "../envs/vdj.yaml"
     params:
         ighc_db=config["ighc_db"]["human"],
         scripts=config["scripts"],
@@ -208,7 +200,7 @@ rule annotate_constant_region:
     shell:
         "python {params.scripts}/blast_constant_region.py "
         "{input} "
-        "--min_j_sequence_legnth 15 "
+        "--min_j_sequence_length 15 "
         "--allow_missing_cdr3 True "
         "--allow_ns_in_sequence True "
         "-ighc_db {params.ighc_db} "

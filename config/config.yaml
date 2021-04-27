@@ -19,7 +19,7 @@ partition: "quake,owners"
 # Software
 #---------------------------
 cell_ranger3: "/home/groups/quake/isakova/cellranger-3.1.0/cellranger"
-cell_ranger6: "/home/groups/quake/mswift/resources/cellranger-6.0.1/cellranger"
+cell_ranger: "/home/groups/quake/mswift/resources/cellranger-6.0.1/cellranger"
 cell_ranger_ref: "/oak/stanford/groups/quake/mswift/resources/cellranger/refdata-cellranger-vdj-GRCh38-alts-ensembl-3.1.0/"
 # ----------------------------------------
 # optional scratch environmental variable for cluster computing
