@@ -5,13 +5,14 @@ import os
 # Configuration
 
 species = config["species"]
-
 # Cell Ranger
 #### CellRanger VDJ #####
 
+
 rule cellranger_vdj:
     input:
-        config["raw_data"],
+        fastqs=config["raw_data"],
+        ref=rules.get_imgt_db.output.ref
     output:
         "{base}/10X/{lib}/outs/metrics_summary.csv",
         "{base}/10X/{lib}/outs/filtered_contig.fasta",
@@ -23,9 +24,8 @@ rule cellranger_vdj:
         name="vdj_cellranger",
         base=config["base"],
         cell_ranger=config["cell_ranger"],
-        ref=config["cell_ranger_ref"],
     shell:
-        "cd {params.base}/10X && rm -rf {wildcards.lib} && {params.cell_ranger} vdj --id={wildcards.lib} --fastqs={input} --reference={params.ref} --sample={wildcards.lib}"
+        "cd {params.base}/10X && rm -rf {wildcards.lib} && {params.cell_ranger}/cellranger vdj --id={wildcards.lib} --fastqs={input.fastqs} --reference={input.ref} --sample={wildcards.lib}"
 
 
 rule igblast_10X:
@@ -34,7 +34,7 @@ rule igblast_10X:
     output:
         "{base}/10X/igblast/{lib}_igblast.airr.tsv",
     conda:
-        os.path.join(workflow.basedir, "envs/pacbio.yaml")
+        os.path.join(workflow.basedir, "envs/vdj.yaml")
     params:
         organism="human",
         IGDBDIR=config["IGDBDIR"],
@@ -57,20 +57,25 @@ rule igblast_10X:
         -out {output}
         """
 
+
 rule edit_10X_igblast:
     input:
         tsv="{base}/10X/igblast/{lib}_igblast.airr.tsv",
+        airr_10X="{base}/10X/{lib}/outs/airr_rearrangement.tsv",
     output:
         tsv="{base}/10X/igblast/{lib}_igblast_edit.airr.tsv",
     params:
         organism="human",
     run:
-        df = pd.read_table(input.tsv, sep="\t")
+        df_igblast = pd.read_table(input.tsv, sep="\t")
+        df_airr10X = pd.read_table(input.airr_10X, sep="\t")
         df["library"] = wildcards.lib
-        df["cell_id"] = wildcards.lib + df['sequence_id']
+        df["cell_id"] = wildcards.lib + df["sequence_id"]
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
 
+
 ### get_bracer_contigs:
+
 
 rule get_SS2_contigs:
     input:
@@ -87,6 +92,7 @@ rule get_SS2_contigs:
         scripts=os.path.join(workflow.basedir, "scripts"),
     shell:
         "python {params.scripts}/get_bracer_contigs.py {input} {output}"
+
 
 rule combine_SS2_contigs:
     input:
@@ -110,7 +116,7 @@ rule igblast_SS2:
     output:
         "{base}/SS2/igblast/igblast.airr.tsv",
     conda:
-        os.path.join(workflow.basedir, "envs/pacbio.yaml")
+        os.path.join(workflow.basedir, "envs/vdj.yaml")
     params:
         organism="human",
         IGDBDIR=config["IGDBDIR"],
@@ -133,6 +139,7 @@ rule igblast_SS2:
         -out {output}
         """
 
+
 rule edit_SS2_igblast:
     input:
         tsv="{base}/SS2/igblast/igblast.airr.tsv",
@@ -143,8 +150,9 @@ rule edit_SS2_igblast:
     run:
         df = pd.read_table(input.tsv, sep="\t")
         df["is_cell"] = "T"
-        df["cell_id"] = df['sequence_id'].str.split('|', expand = True)[-1]
+        df["cell_id"] = df["sequence_id"].str.split("|", expand=True)[-1]
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
+
 
 rule igblast_tracer:
     input:
@@ -162,6 +170,7 @@ rule igblast_tracer:
 
 
 ## Combined Outputs
+
 
 rule combine_igblast:
     input:
@@ -184,6 +193,7 @@ rule combine_igblast:
 
         combined = pd.concat(dfs)
         combined.to_csv(output.tsv, sep="\t", index=False, header=True)
+
 
 rule annotate_constant_region:
     input:

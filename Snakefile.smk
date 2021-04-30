@@ -71,7 +71,7 @@ if test == True:
     libs = libs[:2]
 
 
-include: "rules/get_containers.smk"
+include: "rules/get_resources.smk"
 include: "rules/vdj.smk"
 
 

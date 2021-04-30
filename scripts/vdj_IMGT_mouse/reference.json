@@ -1,0 +1,10 @@
+{
+    "fasta_hash": "79cbd584c1d9436c4a088c7f3471d5180a62b3d8",
+    "genomes": "vdj_IMGT_mouse",
+    "gtf_hash": null,
+    "input_fasta_files": "vdj_IMGT_mouse-mkvdjref-input.fasta",
+    "input_gtf_files": null,
+    "mkref_version": "cellranger-6.0.1",
+    "type": "V(D)J Reference",
+    "version": null
+}
