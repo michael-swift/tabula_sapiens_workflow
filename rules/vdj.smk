@@ -12,7 +12,7 @@ species = config["species"]
 rule cellranger_vdj:
     input:
         fastqs=config["raw_data"],
-        ref=rules.get_imgt_db.output.ref
+        ref=rules.get_imgt_db.output.ref,
     output:
         "{base}/10X/{lib}/outs/metrics_summary.csv",
         "{base}/10X/{lib}/outs/filtered_contig.fasta",
@@ -38,7 +38,7 @@ rule igblast_10X:
     params:
         organism="human",
         IGDBDIR=config["IGDBDIR"],
-        seqtype="Ig",
+        seqtype=sense_lib_type,
     shell:
         """
         ml load system libuv
@@ -67,17 +67,16 @@ rule edit_10X_igblast:
     params:
         organism="human",
     run:
-        df_igblast = pd.read_table(input.tsv, sep="\t")
-        df_airr10X = pd.read_table(input.airr_10X, sep="\t")
+        df = pd.read_table(input.tsv, sep="\t")
         df["library"] = wildcards.lib
-        df["cell_id"] = wildcards.lib + df["sequence_id"]
+        df.loc[:, "cell_id"] = wildcards.lib + df["sequence_id"]
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
 
 
 ### get_bracer_contigs:
 
 
-rule get_SS2_contigs:
+rule get_bracer_contigs:
     input:
         get_changeos,
     output:
@@ -94,7 +93,7 @@ rule get_SS2_contigs:
         "python {params.scripts}/get_bracer_contigs.py {input} {output}"
 
 
-rule combine_SS2_contigs:
+rule combine_bracer_contigs:
     input:
         expand("{base}/SS2/{donor}/contigs.fasta", base=base, donor=donors),
     output:
@@ -110,11 +109,11 @@ rule combine_SS2_contigs:
         "cat {input} > {output}"
 
 
-rule igblast_SS2:
+rule igblast_bracer:
     input:
-        rules.combine_SS2_contigs.output,
+        rules.combine_bracer_contigs.output,
     output:
-        "{base}/SS2/igblast/igblast.airr.tsv",
+        "{base}/SS2/igblast/bracer.airr.tsv",
     conda:
         os.path.join(workflow.basedir, "envs/vdj.yaml")
     params:
@@ -140,44 +139,87 @@ rule igblast_SS2:
         """
 
 
-rule edit_SS2_igblast:
+rule edit_bracer_igblast:
     input:
-        tsv="{base}/SS2/igblast/igblast.airr.tsv",
+        tsv="{base}/SS2/igblast/bracer.airr.tsv",
     output:
         tsv="{base}/SS2/igblast/igblast_cell.airr.tsv",
     params:
         organism="human",
     run:
         df = pd.read_table(input.tsv, sep="\t")
-        df["is_cell"] = "T"
         df["cell_id"] = df["sequence_id"].str.split("|", expand=True)[-1]
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
 
 
+# This is currently so fucked. should specify files explicity
+rule get_tracer_contigs:
+    input:
+        di="{base}/SS2/",
+    output:
+        fasta="{base}/SS2/tracer_contigs.fasta",
+    log:
+        "{base}/logs/get_tracer_fastas.log",
+    params:
+        name="extract_tcr_seqs",
+        partition="quake,owners",
+    run:
+        from Bio import SeqIO
+
+        print(input.di)
+        fastas = glob.glob(input.di + "/*/tracer/assembled/*/filtered*/*.fa*")
+        records = []
+        print(fastas)
+        for fasta in fastas:
+            cellname = fasta.split("/")[-3]
+            donor = fasta.split("/")[-6]
+            for record in SeqIO.parse(fasta, "fasta"):
+                record.description = "{}|{}|{}".format(
+                    record.description, donor, cellname
+                )
+                records.append(record)
+        SeqIO.write(records, output.fasta, "fasta")
+
+
 rule igblast_tracer:
     input:
-        "{base}/SS2/bracer/",
+        fasta="{base}/SS2/tracer_contigs.fasta",
         sif="{}/resources/repertoire/{}.sif".format(workflow.basedir, "immcantation"),
     output:
-        "{base}/SS2/changeo/combined_db-pass.tsv",
-    log:
-        "{base}/logs/combined_igblast.log",
+        "{base}/SS2/igblast/tracer.airr.tsv",
+    conda:
+        os.path.join(workflow.basedir, "envs/vdj.yaml")
     params:
-        name="extract_seqs",
-        partition="quake,owners",
+        organism="human",
+        IGDBDIR=config["IGDBDIR"],
+        seqtype="TCR",
     shell:
-        "singularity exec -B {wildcards.base}:/data {input.sif} changeo-clone -d /data/SS2/combined_bracer_contigs.fasta -n combined -o /data/SS2/changeo -p 2"
+        """
+        ml load system libuv
+        wdir=$(dirname {input[0]})
+        export IGDATA={params.IGDBDIR}
+        igblastn \
+        -germline_db_V {params.IGDBDIR}/database/imgt_{params.organism}_ig_v \
+        -germline_db_D {params.IGDBDIR}/database/imgt_{params.organism}_ig_d \
+        -germline_db_J {params.IGDBDIR}/database/imgt_{params.organism}_ig_j \
+        -auxiliary_data {params.IGDBDIR}/optional_file/{params.organism}_gl.aux \
+        -domain_system imgt \
+        -ig_seqtype {params.seqtype} \
+        -organism {params.organism} \
+        -outfmt 19 \
+        -query {input.fasta} \
+        -out {output}
+        """
 
 
 ## Combined Outputs
-
-
 rule combine_igblast:
     input:
         TenXs=expand(
             "{base}/10X/igblast/{lib}_igblast_edit.airr.tsv", lib=libs, base=base
         ),
-        SS2="{base}/SS2/igblast/bracer_igblast.airr.tsv",
+        bracer="{base}/SS2/igblast/bracer.airr.tsv",
+        tracer="{base}/SS2/igblast/tracer.airr.tsv",
     output:
         tsv="{base}/vdj/combined_igblast.airr.tsv.gz",
     log:
@@ -185,7 +227,7 @@ rule combine_igblast:
     run:
         dfs = []
         infiles = input.TenXs
-        infiles.append(input.SS2)
+        infiles.append(input.bracer)
         for i in infiles:
             df = pd.read_table(i, sep="\t")
             df["sample_id"] = i.split("/")[-1].split("_")[0]

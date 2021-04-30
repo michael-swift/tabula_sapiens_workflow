@@ -42,6 +42,8 @@ def get_10X_fastqs(FASTQ_DIR):
 
 libs = get_10X_fastqs(config["raw_data"])
 # Extract changeos from angelas data
+
+
 def get_changeos(wildcards):
     parentdir = wildcards["base"]
     donor = wildcards["donor"]
@@ -73,6 +75,10 @@ if test == True:
 
 include: "rules/get_resources.smk"
 include: "rules/vdj.smk"
+
+
+localrules:
+    get_tracer_contigs,
 
 
 rule all:

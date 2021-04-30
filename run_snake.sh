@@ -112,8 +112,8 @@ elif [ $1 = "sbatch" ]
         --cpus-per-task=1 \
         --mem=8000 \
         --mail-user=$EMAIL \
-        --time 7-0 \
-        -p quake \
+        --time 0-12 \
+        -p normal,owners,quake \
         -o $SBATCH_LOGFILE \
         -e $SBATCH_LOGFILE_ERR \
         run_snake.sh snakemake
