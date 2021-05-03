@@ -69,13 +69,10 @@ rule edit_10X_igblast:
     run:
         df = pd.read_table(input.tsv, sep="\t")
         df["library"] = wildcards.lib
-        df.loc[:, "cell_id"] = wildcards.lib + df["sequence_id"]
+        df.loc["sequence_id"] = "-|" + df["library"] + "_" +  df["sequence_id"]
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
 
-
 ### get_bracer_contigs:
-
-
 rule get_bracer_contigs:
     input:
         get_changeos,
@@ -108,7 +105,6 @@ rule combine_bracer_contigs:
     shell:
         "cat {input} > {output}"
 
-
 rule igblast_bracer:
     input:
         rules.combine_bracer_contigs.output,
@@ -137,7 +133,6 @@ rule igblast_bracer:
         -query {input} \
         -out {output}
         """
-
 
 rule edit_bracer_igblast:
     input:
@@ -174,8 +169,8 @@ rule get_tracer_contigs:
             cellname = fasta.split("/")[-3]
             donor = fasta.split("/")[-6]
             for record in SeqIO.parse(fasta, "fasta"):
-                record.description = "{}|{}|{}".format(
-                    record.description, donor, cellname
+                record.id = "{}|{}|{}".format(
+                    record.id, donor, cellname
                 )
                 records.append(record)
         SeqIO.write(records, output.fasta, "fasta")
@@ -243,7 +238,7 @@ rule annotate_constant_region:
     output:
         "{base}/vdjc/combined_vdjc.tsv.gz",
     conda:
-        "../envs/vdj.yaml"
+        "../envs/pacbio.yaml"
     params:
         ighc_db=config["ighc_db"]["human"],
         scripts=config["scripts"],
