@@ -21,6 +21,7 @@ donors = [
     "pilot_6",
     "pilot_3",
     "pilot_12",
+    "pilot_2"
 ]
 
 
@@ -59,9 +60,9 @@ def sense_lib_type(wildcards):
 
     lib = wildcards["lib"]
     if "TCR" in lib:
-        return "TCR"
+        return ["TCR", "tr"]
     elif "BCR" in lib:
-        return "Ig"
+        return ["Ig", "ig"]
     else:
         "break IgBlast"
 

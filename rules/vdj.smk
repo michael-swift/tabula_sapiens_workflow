@@ -38,19 +38,19 @@ rule igblast_10X:
     params:
         organism="human",
         IGDBDIR=config["IGDBDIR"],
-        seqtype=sense_lib_type,
+        seqtype =sense_lib_type
     shell:
         """
         ml load system libuv
         wdir=$(dirname {input[0]})
         export IGDATA={params.IGDBDIR}
         igblastn \
-        -germline_db_V {params.IGDBDIR}/database/imgt_{params.organism}_ig_v \
-        -germline_db_D {params.IGDBDIR}/database/imgt_{params.organism}_ig_d \
-        -germline_db_J {params.IGDBDIR}/database/imgt_{params.organism}_ig_j \
+        -germline_db_V {params.IGDBDIR}/database/imgt_{params.organism}_{params.seqtype[1]}_v \
+        -germline_db_D {params.IGDBDIR}/database/imgt_{params.organism}_{params.seqtype[1]}_d \
+        -germline_db_J {params.IGDBDIR}/database/imgt_{params.organism}_{params.seqtype[1]}_j \
         -auxiliary_data {params.IGDBDIR}/optional_file/{params.organism}_gl.aux \
         -domain_system imgt \
-        -ig_seqtype {params.seqtype} \
+        -ig_seqtype {params.seqtype[0]} \
         -organism {params.organism} \
         -outfmt 19 \
         -query {input} \
@@ -69,12 +69,11 @@ rule edit_10X_igblast:
     run:
         df = pd.read_table(input.tsv, sep="\t")
         df["library"] = wildcards.lib
-        df.loc[:, "cell_id"] = wildcards.lib + df["sequence_id"]
+        df.loc[:, "cell_id"] = wildcards.lib + "_" + df["sequence_id"]
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
 
 
 ### get_bracer_contigs:
-
 
 rule get_bracer_contigs:
     input:
@@ -97,7 +96,7 @@ rule combine_bracer_contigs:
     input:
         expand("{base}/SS2/{donor}/contigs.fasta", base=base, donor=donors),
     output:
-        "{base}/SS2/combined_contigs.fasta",
+        "{base}/SS2/BCR_combined_contigs.fasta",
     conda:
         os.path.join(workflow.basedir, "envs/bcr.yaml")
     log:
@@ -165,11 +164,8 @@ rule get_tracer_contigs:
         partition="quake,owners",
     run:
         from Bio import SeqIO
-
-        print(input.di)
         fastas = glob.glob(input.di + "/*/tracer/assembled/*/filtered*/*.fa*")
         records = []
-        print(fastas)
         for fasta in fastas:
             cellname = fasta.split("/")[-3]
             donor = fasta.split("/")[-6]
@@ -193,15 +189,16 @@ rule igblast_tracer:
         organism="human",
         IGDBDIR=config["IGDBDIR"],
         seqtype="TCR",
+        dbtype = "tr",
     shell:
         """
         ml load system libuv
         wdir=$(dirname {input[0]})
         export IGDATA={params.IGDBDIR}
         igblastn \
-        -germline_db_V {params.IGDBDIR}/database/imgt_{params.organism}_ig_v \
-        -germline_db_D {params.IGDBDIR}/database/imgt_{params.organism}_ig_d \
-        -germline_db_J {params.IGDBDIR}/database/imgt_{params.organism}_ig_j \
+        -germline_db_V {params.IGDBDIR}/database/imgt_{params.organism}_{params.dbtype}_v \
+        -germline_db_D {params.IGDBDIR}/database/imgt_{params.organism}_{params.dbtype}_d \
+        -germline_db_J {params.IGDBDIR}/database/imgt_{params.organism}_{params.dbtype}_j \
         -auxiliary_data {params.IGDBDIR}/optional_file/{params.organism}_gl.aux \
         -domain_system imgt \
         -ig_seqtype {params.seqtype} \
@@ -210,7 +207,6 @@ rule igblast_tracer:
         -query {input.fasta} \
         -out {output}
         """
-
 
 ## Combined Outputs
 rule combine_igblast:
@@ -221,9 +217,9 @@ rule combine_igblast:
         bracer="{base}/SS2/igblast/bracer.airr.tsv",
         tracer="{base}/SS2/igblast/tracer.airr.tsv",
     output:
-        tsv="{base}/vdj/combined_igblast.airr.tsv.gz",
+        tsv="{base}/vdj/combined_igblast.airr.tsv",
     log:
-        "{base}/log/combineigblast.log",
+        "{base}/logs/combineigblast.log",
     run:
         dfs = []
         infiles = input.TenXs
@@ -236,10 +232,25 @@ rule combine_igblast:
         combined = pd.concat(dfs)
         combined.to_csv(output.tsv, sep="\t", index=False, header=True)
 
+rule changeo_clone:
+    input:
+        db="{base}/vdj/combined_igblast.airr.tsv", sif=rules.get_immcantation_image.output
+    output:
+        "{base}/vdj/changeo/combined_germ-pass.tsv"
+    conda:
+        "../envs/vdj.yaml"
+    params:
+        dist="0.12",
+        sample_name="combined",
+        nproc= '2'
+    log:
+        "{base}/logs/changeo_clone.log",
+    shell:
+        "singularity exec -B {wildcards.base}:/data input.sif changeo-clone -x {params.dist} -d {input.db} -n {params.sample_name} -o /data/vdj/changeo -p {params.nproc}" 
 
 rule annotate_constant_region:
     input:
-        "{base}/vdj/combined_igblast.airr.tsv.gz",
+        "{base}/vdj/changeo/combined_germ-pass.tsv"
     output:
         "{base}/vdjc/combined_vdjc.tsv.gz",
     conda:
@@ -250,6 +261,8 @@ rule annotate_constant_region:
     log:
         "{base}/logs/annotate_constant_region.log",
     shell:
+        "cat {input} > {output}"
+"""
         "python {params.scripts}/blast_constant_region.py "
         "{input} "
         "--min_j_sequence_length 15 "
@@ -258,3 +271,4 @@ rule annotate_constant_region:
         "-ighc_db {params.ighc_db} "
         "-outdir {wildcards.base}/vdjc "
         "> {log}"
+"""
