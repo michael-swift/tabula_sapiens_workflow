@@ -79,7 +79,7 @@ include: "rules/vdj.smk"
 
 
 localrules:
-    get_tracer_contigs,
+    get_tracer_contigs, edit_10X_igblast
 
 
 rule all:
