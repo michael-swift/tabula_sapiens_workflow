@@ -60,14 +60,19 @@ rule edit_10X_igblast:
     input:
         tsv="{base}/10X/igblast/{lib}_igblast.airr.tsv",
         airr_10X="{base}/10X/{lib}/outs/airr_rearrangement.tsv",
+        filtered_contig_annotation="{base}/10X/{lib}/outs/filtered_contig_annotations.csv"
     output:
         tsv="{base}/10X/igblast/{lib}_igblast_edit.airr.tsv",
     run:
         df = pd.read_table(input.tsv, sep="\t")
+        df_anno = pd.read_csv(input.filtered_contig_annotation)
+        df_anno = df_anno[['contig_id', 'high_confidence', 'umis', 'reads']]
+        df.loc[:,'contig_id'] = df.sequence_id
         df.loc[:,"sequence_id"] = df.sequence_id + "_" + wildcards.lib
         df.loc[:,"library"] = "10X_vdj"
+        # add 10X annotation
+        df = df.merge(df_ann, left_on = 'contig_id', right_on = 'contig_id') 
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
-
 
 ### get_bracer_contigs:
 
