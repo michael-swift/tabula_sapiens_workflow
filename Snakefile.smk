@@ -13,14 +13,19 @@ base = config["base"]
 # should be loaded as config file
 
 donors = [
-    "pilot_10",
-    "pilot_13",
-    "pilot_4",
-    "pilot_8",
-    "pilot_9",
-    "pilot_6",
-    "pilot_3",
-    "pilot_12",
+    "TSP10",
+    "TSP13",
+#    "TSP4",
+    "TSP8",
+    "TSP9",
+    "TSP6",
+    "TSP3",
+    "TSP12",
+    "TSP2",
+#    "TSP1",
+    "TSP5",
+#    "TSP14",
+    "TSP11"
 ]
 
 
@@ -59,9 +64,9 @@ def sense_lib_type(wildcards):
 
     lib = wildcards["lib"]
     if "TCR" in lib:
-        return "TCR"
+        return ["TCR", "tr"]
     elif "BCR" in lib:
-        return "Ig"
+        return ["Ig", "ig"]
     else:
         "break IgBlast"
 
@@ -78,7 +83,7 @@ include: "rules/vdj.smk"
 
 
 localrules:
-    get_tracer_contigs,
+    get_tracer_contigs, edit_10X_igblast
 
 
 rule all:

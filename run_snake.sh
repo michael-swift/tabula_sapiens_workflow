@@ -51,6 +51,7 @@ elif [ $1 = "dryrun" ]
             -r \
             -k \
             --printshellcmds
+
 elif [ $1 = "force" ]
     # Dry run snakemake and print shell cmds 
     then
