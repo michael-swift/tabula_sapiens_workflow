@@ -13,15 +13,19 @@ base = config["base"]
 # should be loaded as config file
 
 donors = [
-    "pilot_10",
-    "pilot_13",
-    "pilot_4",
-    "pilot_8",
-    "pilot_9",
-    "pilot_6",
-    "pilot_3",
-    "pilot_12",
-    "pilot_2"
+    "TSP10",
+    "TSP13",
+#    "TSP4",
+    "TSP8",
+    "TSP9",
+    "TSP6",
+    "TSP3",
+    "TSP12",
+    "TSP2",
+#    "TSP1",
+    "TSP5",
+#    "TSP14",
+    "TSP11"
 ]
 
 
