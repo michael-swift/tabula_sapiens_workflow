@@ -27,6 +27,7 @@ rule cellranger_vdj:
     shell:
         "cd {params.base}/10X && rm -rf {wildcards.lib} && {params.cell_ranger}/cellranger vdj --id={wildcards.lib} --fastqs={input.fastqs} --reference={input.ref} --sample={wildcards.lib}"
 
+
 rule igblast_10X:
     input:
         "{base}/10X/{lib}/outs/filtered_contig.fasta",
@@ -37,7 +38,7 @@ rule igblast_10X:
     params:
         organism="human",
         IGDBDIR=config["IGDBDIR"],
-        seqtype =sense_lib_type
+        seqtype=sense_lib_type,
     shell:
         """
         ml load system libuv
@@ -56,26 +57,30 @@ rule igblast_10X:
         -out {output}
         """
 
+
 rule edit_10X_igblast:
     input:
         tsv="{base}/10X/igblast/{lib}_igblast.airr.tsv",
         airr_10X="{base}/10X/{lib}/outs/airr_rearrangement.tsv",
-        filtered_contig_annotation="{base}/10X/{lib}/outs/filtered_contig_annotations.csv"
+        filtered_contig_annotation=(
+            "{base}/10X/{lib}/outs/filtered_contig_annotations.csv"
+        ),
     output:
         tsv="{base}/10X/igblast/{lib}_igblast_edit.airr.tsv",
     run:
         df = pd.read_table(input.tsv, sep="\t")
         df["library"] = wildcards.lib
-        df.loc["sequence_id"] = "-|" + df["library"] + "_" +  df["sequence_id"]
+        df.loc["sequence_id"] = "-|" + df["library"] + "_" + df["sequence_id"]
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
         df_anno = pd.read_csv(input.filtered_contig_annotation)
-        df_anno = df_anno[['contig_id', 'high_confidence', 'umis', 'reads']]
-        df.loc[:,'contig_id'] = df.sequence_id
-        df.loc[:,"sequence_id"] = df.sequence_id + "_" + wildcards.lib
-        df.loc[:,"library"] = "10X_vdj"
+        df_anno = df_anno[["contig_id", "high_confidence", "umis", "reads"]]
+        df.loc[:, "contig_id"] = df.sequence_id
+        df.loc[:, "sequence_id"] = df.sequence_id + "_" + wildcards.lib
+        df.loc[:, "library"] = "10X_vdj"
         # add 10X annotation
-        df = df.merge(df_ann, left_on = 'contig_id', right_on = 'contig_id') 
+        df = df.merge(df_ann, left_on="contig_id", right_on="contig_id")
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
+
 
 rule get_bracer_contigs:
     input:
@@ -93,6 +98,7 @@ rule get_bracer_contigs:
     shell:
         "python {params.scripts}/get_bracer_contigs.py {input} {output}"
 
+
 # TODO run this with biopython
 rule combine_bracer_contigs:
     input:
@@ -108,6 +114,7 @@ rule combine_bracer_contigs:
         partition="quake,owners",
     shell:
         "cat {input} > {output}"
+
 
 rule igblast_bracer:
     input:
@@ -138,6 +145,7 @@ rule igblast_bracer:
         -out {output}
         """
 
+
 rule edit_bracer_igblast:
     input:
         tsv="{base}/SS2/igblast/bracer.airr.tsv",
@@ -145,7 +153,7 @@ rule edit_bracer_igblast:
         tsv="{base}/SS2/igblast/bracer_lib.airr.tsv",
     run:
         df = pd.read_table(input.tsv, sep="\t")
-        df['library'] = 'bracer'
+        df["library"] = "bracer"
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
 
 
@@ -162,19 +170,14 @@ rule get_tracer_contigs:
         partition="quake,owners",
     run:
         from Bio import SeqIO
+
         fastas = glob.glob(input.di + "/*/tracer/assembled/*/filtered*/*.fa*")
         records = []
         for fasta in fastas:
             cellname = fasta.split("/")[-3]
             donor = fasta.split("/")[-6]
             for record in SeqIO.parse(fasta, "fasta"):
-                record.id = "{}|{}|{}".format(
-<<<<<<< HEAD
-                    record.id, donor, cellname
-                )
-=======
-                    cellname, record.description, donor)
->>>>>>> tracer
+                record.id = "{}|{}|{}".format(cellname, record.description, donor)
                 records.append(record)
         SeqIO.write(records, output.fasta, "fasta")
 
@@ -191,7 +194,7 @@ rule igblast_tracer:
         organism="human",
         IGDBDIR=config["IGDBDIR"],
         seqtype="TCR",
-        dbtype = "tr",
+        dbtype="tr",
     shell:
         """
         ml load system libuv
@@ -209,6 +212,8 @@ rule igblast_tracer:
         -query {input.fasta} \
         -out {output}
         """
+
+
 rule edit_tracer_igblast:
     input:
         tsv="{base}/SS2/igblast/tracer.airr.tsv",
@@ -216,8 +221,9 @@ rule edit_tracer_igblast:
         tsv="{base}/SS2/igblast/tracer_lib.airr.tsv",
     run:
         df = pd.read_table(input.tsv, sep="\t")
-        df['library'] = 'tracer'
+        df["library"] = "tracer"
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
+
 
 ## Combined Outputs
 rule combine_igblast:
@@ -243,37 +249,45 @@ rule combine_igblast:
         combined = pd.concat(dfs)
         combined.to_csv(output.tsv, sep="\t", index=False, header=True)
 
+
 rule split_loci:
-    input:db="{base}/vdj/combined_igblast.airr.tsv"
-    output:bcr="{base}/vdj/ig_airr.tsv",tcr="{base}/vdj/tr_airr.tsv"
-    log: "{base}/logs/split.log"
+    input:
+        db="{base}/vdj/combined_igblast.airr.tsv",
+    output:
+        bcr="{base}/vdj/ig_airr.tsv",
+        tcr="{base}/vdj/tr_airr.tsv",
+    log:
+        "{base}/logs/split.log",
     run:
-        df = pd.read_table(input.db, sep = "\t")
-        df.dropna(subset=['locus'], inplace = True)
-        df_out = df[df.locus.str.contains('IG')]
-        df_out.to_csv(output.bcr, index=False, header = True, sep = "\t")
-        df_out = df[~df.locus.str.contains('IG')]
-        df_out.to_csv(output.tcr, index=False, header = True, sep = "\t")
+        df = pd.read_table(input.db, sep="\t")
+        df.dropna(subset=["locus"], inplace=True)
+        df_out = df[df.locus.str.contains("IG")]
+        df_out.to_csv(output.bcr, index=False, header=True, sep="\t")
+        df_out = df[~df.locus.str.contains("IG")]
+        df_out.to_csv(output.tcr, index=False, header=True, sep="\t")
+
 
 rule changeo_clone:
     input:
-        bcr_db="{base}/vdj/ig_airr.tsv", sif=rules.get_immcantation_image.output
+        bcr_db="{base}/vdj/ig_airr.tsv",
+        sif=rules.get_immcantation_image.output,
     output:
-        "{base}/vdj/changeo/combined_germ-pass.tsv"
+        "{base}/vdj/changeo/combined_germ-pass.tsv",
     conda:
         "../envs/vdj.yaml"
     params:
         dist="0.15",
         sample_name="combined",
-        nproc= '2'
+        nproc="2",
     log:
         "{base}/logs/changeo_clone.log",
     shell:
-        "singularity exec -B {wildcards.base}:/data {input.sif} changeo-clone -x {params.dist} -d {input.bcr_db} -n {params.sample_name} -o /data/vdj/changeo -p {params.nproc}" 
+        "singularity exec -B {wildcards.base}:/data {input.sif} changeo-clone -x {params.dist} -d {input.bcr_db} -n {params.sample_name} -o /data/vdj/changeo -p {params.nproc}"
+
 
 rule annotate_constant_region:
     input:
-        "{base}/vdj/changeo/combined_germ-pass.tsv"
+        "{base}/vdj/changeo/combined_germ-pass.tsv",
     output:
         "{base}/vdjc/combined_vdjc.tsv.gz",
     conda:
@@ -285,6 +299,8 @@ rule annotate_constant_region:
         "{base}/logs/annotate_constant_region.log",
     shell:
         "cat {input} > {output}"
+
+
 """
         "python {params.scripts}/blast_constant_region.py "
         "{input} "
