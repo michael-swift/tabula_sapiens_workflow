@@ -239,7 +239,10 @@ rule combine_igblast:
         "{base}/logs/combineigblast.log",
     run:
         dfs = []
+        print(input.TenXs)
+        print('10X files')
         infiles = input.TenXs
+        print(infiles)
         infiles.append(input.bracer)
         infiles.append(input.tracer)
         for i in infiles:
@@ -248,7 +251,6 @@ rule combine_igblast:
 
         combined = pd.concat(dfs)
         combined.to_csv(output.tsv, sep="\t", index=False, header=True)
-
 
 rule split_loci:
     input:
@@ -266,25 +268,6 @@ rule split_loci:
         df_out = df[~df.locus.str.contains("IG")]
         df_out.to_csv(output.tcr, index=False, header=True, sep="\t")
 
-
-rule changeo_clone:
-    input:
-        bcr_db="{base}/vdj/ig_airr.tsv",
-        sif=rules.get_immcantation_image.output,
-    output:
-        "{base}/vdj/changeo/combined_germ-pass.tsv",
-    conda:
-        "../envs/vdj.yaml"
-    params:
-        dist="0.15",
-        sample_name="combined",
-        nproc="2",
-    log:
-        "{base}/logs/changeo_clone.log",
-    shell:
-        "singularity exec -B {wildcards.base}:/data {input.sif} changeo-clone -x {params.dist} -d {input.bcr_db} -n {params.sample_name} -o /data/vdj/changeo -p {params.nproc}"
-
-
 rule annotate_constant_region:
     input:
         "{base}/vdj/changeo/combined_germ-pass.tsv",
@@ -298,16 +281,4 @@ rule annotate_constant_region:
     log:
         "{base}/logs/annotate_constant_region.log",
     shell:
-        "cat {input} > {output}"
-
-
-"""
-        "python {params.scripts}/blast_constant_region.py "
-        "{input} "
-        "--min_j_sequence_length 15 "
-        "--allow_missing_cdr3 True "
-        "--allow_ns_in_sequence True "
-        "-ighc_db {params.ighc_db} "
-        "-outdir {wildcards.base}/vdjc "
-        "> {log}"
-"""
+        "cat {input} > {output}" # placeholder

@@ -15,16 +15,16 @@ base = config["base"]
 donors = [
     "TSP10",
     "TSP13",
-#    "TSP4",
+#    "TSP4", # no assemblies
     "TSP8",
     "TSP9",
     "TSP6",
     "TSP3",
     "TSP12",
     "TSP2",
-#    "TSP1",
+   "TSP1", # can't find the changeodb.tab, put dummy changeodb in for this to run
     "TSP5",
-#    "TSP14",
+#    "TSP14", # no data yet
     "TSP11"
 ]
 
@@ -88,7 +88,7 @@ localrules:
 
 rule all:
     input:
-        "{}/vdjc/combined_vdjc.tsv.gz".format(base),
+        "{}/vdj/combined_igblast.airr.tsv".format(base),
     params:
         name="all",
         partition="normal",
