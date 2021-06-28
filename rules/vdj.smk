@@ -78,9 +78,8 @@ rule edit_10X_igblast:
         df.loc[:, "sequence_id"] = df.sequence_id + "_" + wildcards.lib
         df.loc[:, "library"] = "10X_vdj"
         # add 10X annotation
-        df = df.merge(df_ann, left_on="contig_id", right_on="contig_id")
+        df = df.merge(df_anno, left_on="contig_id", right_on="contig_id")
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
-
 
 rule get_bracer_contigs:
     input:
@@ -156,8 +155,7 @@ rule edit_bracer_igblast:
         df["library"] = "bracer"
         df.to_csv(output.tsv, sep="\t", index=False, header=True)
 
-
-# This is currently so fucked. should specify files explicity
+# ideally this could be integrated with the actual call to tracer
 rule get_tracer_contigs:
     input:
         di="{base}/SS2/",
@@ -213,7 +211,6 @@ rule igblast_tracer:
         -out {output}
         """
 
-
 rule edit_tracer_igblast:
     input:
         tsv="{base}/SS2/igblast/tracer.airr.tsv",
@@ -251,34 +248,3 @@ rule combine_igblast:
 
         combined = pd.concat(dfs)
         combined.to_csv(output.tsv, sep="\t", index=False, header=True)
-
-rule split_loci:
-    input:
-        db="{base}/vdj/combined_igblast.airr.tsv",
-    output:
-        bcr="{base}/vdj/ig_airr.tsv",
-        tcr="{base}/vdj/tr_airr.tsv",
-    log:
-        "{base}/logs/split.log",
-    run:
-        df = pd.read_table(input.db, sep="\t")
-        df.dropna(subset=["locus"], inplace=True)
-        df_out = df[df.locus.str.contains("IG")]
-        df_out.to_csv(output.bcr, index=False, header=True, sep="\t")
-        df_out = df[~df.locus.str.contains("IG")]
-        df_out.to_csv(output.tcr, index=False, header=True, sep="\t")
-
-rule annotate_constant_region:
-    input:
-        "{base}/vdj/changeo/combined_germ-pass.tsv",
-    output:
-        "{base}/vdjc/combined_vdjc.tsv.gz",
-    conda:
-        "../envs/pacbio.yaml"
-    params:
-        ighc_db=config["ighc_db"]["human"],
-        scripts=config["scripts"],
-    log:
-        "{base}/logs/annotate_constant_region.log",
-    shell:
-        "cat {input} > {output}" # placeholder

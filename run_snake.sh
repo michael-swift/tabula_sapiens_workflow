@@ -52,6 +52,20 @@ elif [ $1 = "dryrun" ]
             -k \
             --printshellcmds
 
+elif [ $1 = "dryforce" ]
+    # Dry run snakemake and print shell cmds 
+    then
+        snakemake \
+            -s $SNAKEFILE $TARGET \
+            --use-conda \
+            --keep-target-files \
+            --rerun-incomplete \
+            -n \
+            -r \
+            -k \
+	    -F \
+            --printshellcmds
+
 elif [ $1 = "force" ]
     # Dry run snakemake and print shell cmds 
     then

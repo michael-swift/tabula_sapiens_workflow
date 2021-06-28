@@ -4,7 +4,7 @@
 samplesheet: samplesheets/samplesheet.tab
 # output directory for processed data
 base: "/oak/stanford/groups/quake/mswift/tabula_sapiens"
-raw_data: "/oak/stanford/groups/quake/shared/NovaSeq/20200820_TSP3to7_10X/Tabula_Sapiens/"
+raw_data: "/oak/stanford/groups/quake/shared/NovaSeq/TSP2_5prime_TSP6_TSP7/Tabula_Sapiens/"
 SS2_download: "/oak/stanford/groups/quake/mswift/tabula_sapiens/SS2"
 # the assembly pipeline uses the immcantation framework for IgBLAST
 # gene segment calling and results parsing

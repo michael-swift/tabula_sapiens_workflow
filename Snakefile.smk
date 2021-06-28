@@ -11,7 +11,6 @@ configfile: "config/config.yaml"
 
 base = config["base"]
 # should be loaded as config file
-
 donors = [
     "TSP10",
     "TSP13",
@@ -22,12 +21,11 @@ donors = [
     "TSP3",
     "TSP12",
     "TSP2",
-   "TSP1", # can't find the changeodb.tab, put dummy changeodb in for this to run
+    "TSP1", # can't find the changeodb.tab, put dummy changeodb in for this to run
     "TSP5",
 #    "TSP14", # no data yet
     "TSP11"
 ]
-
 
 os.makedirs(base, exist_ok=True)
 
@@ -70,7 +68,6 @@ def sense_lib_type(wildcards):
     else:
         "break IgBlast"
 
-
 ## Debug mode
 test = False
 # Testing
@@ -88,7 +85,7 @@ localrules:
 
 rule all:
     input:
-        "{}/vdj/combined_igblast.airr.tsv".format(base),
+        "{}/vdj/combined_igblast.airr.tsv".format(base), 
     params:
         name="all",
         partition="normal",
