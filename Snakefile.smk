@@ -24,7 +24,8 @@ donors = [
     "TSP1", # can't find the changeodb.tab, put dummy changeodb in for this to run
     "TSP5",
 #    "TSP14", # no data yet
-    "TSP11"
+    "TSP11",
+    "TSP7"
 ]
 
 os.makedirs(base, exist_ok=True)
