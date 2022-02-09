@@ -1,5 +1,4 @@
 logs/
 *.snakemake
-envs/
 snakemake_logs/
 resources/
